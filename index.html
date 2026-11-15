@@ -821,6 +821,28 @@ select{cursor:pointer}
   .drawer{width:100%}.notice{max-width:calc(100% - 18px);font-size:8.5px}
   .legend{bottom:52px}
 }
+/* 我的位置：蓝色脉冲点 */
+.userwrap{background:transparent;border:0}
+.userdot{width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;
+  box-shadow:0 0 0 2px rgba(37,99,235,.4),0 2px 10px rgba(0,0,0,.4);position:relative}
+.userdot .ring{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;
+  border-radius:50%;background:rgba(37,99,235,.5);animation:upulse 1.9s ease-out infinite}
+@keyframes upulse{0%{transform:scale(1);opacity:.75}100%{transform:scale(3.6);opacity:0}}
+/* 选中的房子：红色标记 + 名牌 */
+.selwrap{background:transparent;border:0}
+.selbox{position:absolute;transform:translate(-50%,-100%);left:50%;top:0;text-align:center;pointer-events:none}
+.selpin{width:26px;height:26px;border-radius:50%;background:#ef4444;border:3px solid #fff;margin:0 auto;
+  box-shadow:0 0 0 3px rgba(239,68,68,.35),0 4px 14px rgba(0,0,0,.45);position:relative}
+.selpin::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);
+  border:7px solid transparent;border-top-color:#ef4444}
+.sellab{margin:0 0 7px;display:inline-block;background:rgba(9,15,26,.95);border:1px solid #ef4444;
+  color:#fff;font-size:11px;padding:3px 8px;border-radius:6px;white-space:nowrap;
+  box-shadow:0 4px 14px rgba(0,0,0,.45)}
+/* 连线上的距离 */
+.distwrap{background:transparent;border:0}
+.distlab{transform:translate(-50%,-50%);background:rgba(9,15,26,.94);border:1px solid #38bdf8;
+  color:#7dd3fc;font-size:10.5px;padding:2px 7px;border-radius:10px;white-space:nowrap;
+  box-shadow:0 3px 12px rgba(0,0,0,.4)}
 #bootov{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:2000;
   display:flex;align-items:center;gap:9px;padding:7px 14px;border-radius:20px;
   background:rgba(9,15,26,.94);border:1px solid #2a3d5c;color:#cfe0f7;
@@ -880,6 +902,7 @@ select{cursor:pointer}
         <button data-base="amap" class="on">高德底图</button><button data-base="carto">浅色</button>
       </div>
       <button class="mapbtn" id="fitCity">全市视野</button>
+      <button class="mapbtn" id="locBtn">📍 我的位置</button>
       <a class="mapbtn" href="calc.html" style="text-decoration:none;display:inline-block">算一算</a>
     </div>
     <div class="legend" id="legend"></div>
@@ -889,7 +912,7 @@ select{cursor:pointer}
   </main>
 </div>
 <div id="loaderr">地图组件加载失败：请检查网络（需能访问 unpkg.com）。</div>
-<script src="leaflet.js?v=20261115b"></script>
+<script src="leaflet.js?v=20261115c"></script>
 <script>
 (function(){
 "use strict";
@@ -1052,6 +1075,66 @@ var CanvasLayer=L.Layer.extend({
 var layer=new CanvasLayer();
 map.addLayer(layer);
 map.on("zoomend",function(){ layer.draw(); });
+
+/* ---------- 我的位置 & 选中楼盘 标记 ---------- */
+var ovLayer=L.layerGroup().addTo(map);
+var userLL=null, userDot=null, userAcc=null, selGroup=null;
+function utoast(msg){
+  var d=document.createElement("div");
+  d.style.cssText="position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:1600;background:rgba(9,15,26,.96);border:1px solid #3b5f8f;color:#dbe9fb;padding:7px 13px;border-radius:8px;font-size:11.5px;box-shadow:0 8px 24px rgba(0,0,0,.5);max-width:78%;text-align:center";
+  d.textContent=msg;
+  document.getElementById("mapwrap").appendChild(d);
+  setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); },3200);
+}
+function distKm(a,b){
+  var R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLng=(b.lng-a.lng)*Math.PI/180;
+  var la1=a.lat*Math.PI/180, la2=b.lat*Math.PI/180;
+  var h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
+}
+function setUser(ll,acc){
+  userLL=ll;
+  if(userDot){ ovLayer.removeLayer(userDot); }
+  if(userAcc){ ovLayer.removeLayer(userAcc); }
+  userAcc=L.circle(ll,{radius:Math.max(60,acc||80),color:"#2563eb",weight:1,fillColor:"#2563eb",
+    fillOpacity:.07,dashArray:"4,7",interactive:false});
+  userDot=L.marker(ll,{zIndexOffset:1200,interactive:false,
+    icon:L.divIcon({className:"userwrap",iconSize:[18,18],
+      html:'<div class="userdot"><span class="ring"></span></div>'})});
+  ovLayer.addLayer(userAcc);
+  ovLayer.addLayer(userDot);
+}
+function showSel(it){
+  hideSel();
+  var ll=it.ll;
+  selGroup=L.layerGroup();
+  selGroup.addLayer(L.circle(ll,{radius:70,color:"#ef4444",weight:3,fillColor:"#ef4444",fillOpacity:.13,interactive:false}));
+  selGroup.addLayer(L.marker(ll,{zIndexOffset:1500,interactive:false,
+    icon:L.divIcon({className:"selwrap",iconSize:[0,0],
+      html:'<div class="selbox"><div class="sellab">'+it.n+'</div><div class="selpin"></div></div>'})}));
+  if(userLL){
+    var km=distKm(userLL,ll);
+    selGroup.addLayer(L.polyline([userLL,ll],{color:"#38bdf8",weight:2,dashArray:"7,9",opacity:.9,interactive:false}));
+    selGroup.addLayer(L.marker(L.latLng((userLL.lat+ll.lat)/2,(userLL.lng+ll.lng)/2),{interactive:false,
+      icon:L.divIcon({className:"distwrap",iconSize:[0,0],
+        html:'<div class="distlab">直线 '+(km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km")+'</div>'})}));
+  }
+  ovLayer.addLayer(selGroup);
+}
+function hideSel(){ if(selGroup){ ovLayer.removeLayer(selGroup); selGroup=null; } }
+function locate(manual){
+  if(!navigator.geolocation){ if(manual) utoast("当前浏览器不支持定位"); return; }
+  if(manual) utoast("正在获取你的位置…");
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var ll=L.latLng(pos.coords.latitude,pos.coords.longitude);
+    setUser(ll,pos.coords.accuracy);
+    if(manual){ map.flyTo(ll,16,{duration:.9}); utoast("已标出你的位置（蓝点）"); }
+    if(state.sel!==null && ITEMS[state.sel]) showSel(ITEMS[state.sel]);
+  },function(err){
+    if(manual) utoast(err&&err.code===1?"定位被拒绝：请在浏览器里允许「位置」权限":"定位失败：需要 HTTPS 且允许位置权限");
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+}
+document.getElementById("locBtn").onclick=function(){ locate(true); };
 
 /* ---------- 数据就绪后启动（地图已在上面先画出来） ---------- */
 window.__BOOT=function(){
@@ -1244,7 +1327,7 @@ document.getElementById("menuBtn").onclick=function(){ document.getElementById("
 /* ---------- 抽屉 ---------- */
 var drawer=document.getElementById("drawer");
 function closeDrawer(){
-  drawer.classList.remove("open"); drawer.innerHTML=""; state.sel=null;
+  drawer.classList.remove("open"); drawer.innerHTML=""; state.sel=null; hideSel();
   Array.prototype.forEach.call(document.querySelectorAll(".card.sel"),function(c){c.classList.remove("sel");});
 }
 function dcell(k,v,unit,cls){
@@ -1289,7 +1372,16 @@ function openItem(it,focus){
    +'<div class="dw-foot">坐标为高德 POI 实测点（售楼处为在售项目案场位置，可能与实际楼栋有偏差）；价格为所属板块参考均价，非该楼盘实际报价，不构成购房建议。<br/>数据：高德开放平台 · 2026年11月</div>';
   drawer.innerHTML=html;
   drawer.classList.add("open");
+  showSel(it);
   drawer.scrollTop=0;
+  if(userLL){
+    var _km=distKm(userLL,it.ll);
+    var _el=document.createElement("div");
+    _el.className="dw-sub"; _el.style.color="#7dd3fc";
+    _el.textContent="📍 距你约 "+(_km<1?Math.round(_km*1000)+" 米":_km.toFixed(1)+" 公里")+"（直线）";
+    var _hd=drawer.querySelector(".dw-head");
+    if(_hd) _hd.appendChild(_el);
+  }
   drawer.querySelector(".dw-close").onclick=closeDrawer;
   Array.prototype.forEach.call(document.querySelectorAll(".card"),function(c){
     c.classList.toggle("sel",c.getAttribute("data-id")===String(it.id));
@@ -1316,8 +1408,11 @@ window.__CLOSE__=closeDrawer;
 buildUI();
 render();
 setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
+  setTimeout(function(){ try{ locate(false); }catch(e){} }, 1200);
 };
 })();
+
+
 
 
 
@@ -1332,7 +1427,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
   function fallback(){
     txt('整包');
     var s=document.createElement('script');
-    s.src='data.js?v=20261115b';
+    s.src='data.js?v=20261115c';
     s.onload=done;
     s.onerror=function(){ txt('失败'); if(ov) ov.querySelector('.bt').textContent='数据加载失败，请刷新重试'; };
     document.body.appendChild(s);
@@ -1341,7 +1436,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
   if(location.protocol==='file:' || !window.fetch || !window.DecompressionStream){ fallback(); return; }
   var N=5, parts=[], ok=0;
   function one(i){
-    return fetch('data.p'+i+'?v=20261115b').then(function(r){
+    return fetch('data.p'+i+'?v=20261115c').then(function(r){
       if(!r.ok) throw new Error('p'+i);
       return r.arrayBuffer();
     }).then(function(b){

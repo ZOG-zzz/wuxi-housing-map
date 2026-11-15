@@ -1,6 +1,6 @@
-const C='wxmap-20261115b';
-const ASSETS=['./','index.html','detail.html','calc.html','manifest.json','leaflet.js?v=20261115b','leaflet.css',
-  'data.p0?v=20261115b','data.p1?v=20261115b','data.p2?v=20261115b','data.p3?v=20261115b','data.p4?v=20261115b','icon-192.png','icon-512.png'];
+const C='wxmap-20261115c';
+const ASSETS=['./','index.html','detail.html','calc.html','manifest.json','leaflet.js?v=20261115c','leaflet.css',
+  'data.p0?v=20261115c','data.p1?v=20261115c','data.p2?v=20261115c','data.p3?v=20261115c','data.p4?v=20261115c','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(ASSETS).catch(()=>{})));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{
