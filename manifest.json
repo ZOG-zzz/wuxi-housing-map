@@ -1,0 +1,24 @@
+{
+  "name": "无锡楼市全量地图",
+  "short_name": "无锡楼市",
+  "description": "6744 个楼盘/小区，精确坐标、配套距离、预算试算",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070d17",
+  "theme_color": "#0c1422",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

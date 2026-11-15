@@ -1,9 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>无锡楼市全量地图｜6744个真实楼盘小区 · 精确坐标 · 配套距离</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#0c1422"/>
 <style>
 /* required styles */
 
@@ -878,6 +880,7 @@ select{cursor:pointer}
         <button data-base="amap" class="on">高德底图</button><button data-base="carto">浅色</button>
       </div>
       <button class="mapbtn" id="fitCity">全市视野</button>
+      <a class="mapbtn" href="calc.html" style="text-decoration:none;display:inline-block">算一算</a>
     </div>
     <div class="legend" id="legend"></div>
     <div class="notice"><b>数据</b>：坐标与配套距离来自高德地图 POI 实测（住宅区 6,111 / 售楼处 633），价格为所属板块参考均价，非单套报价。</div>
@@ -886,7 +889,7 @@ select{cursor:pointer}
   </main>
 </div>
 <div id="loaderr">地图组件加载失败：请检查网络（需能访问 unpkg.com）。</div>
-<script src="leaflet.js?v=20261115a"></script>
+<script src="leaflet.js?v=20261115b"></script>
 <script>
 (function(){
 "use strict";
@@ -1282,6 +1285,7 @@ function openItem(it,focus){
    +'<div><i>🌳</i><span>'+fac.p+'</span></div></div>'
    +'<div class="sec-t">优点</div><div class="pc pro"><ul>'+b.pro.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul></div>'
    +'<div class="sec-t">缺点 / 风险</div><div class="pc con"><ul>'+b.con.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul></div>'
+   +'<div style="padding:10px 14px 4px"><a href="detail.html?i='+it.id+'" target="_blank" style="display:block;text-align:center;background:#16253d;border:1px solid #27395a;border-radius:8px;padding:9px;color:#cfe0f7;text-decoration:none;font-size:12px">打开独立详情页（可分享） ↗</a></div>'
    +'<div class="dw-foot">坐标为高德 POI 实测点（售楼处为在售项目案场位置，可能与实际楼栋有偏差）；价格为所属板块参考均价，非该楼盘实际报价，不构成购房建议。<br/>数据：高德开放平台 · 2026年11月</div>';
   drawer.innerHTML=html;
   drawer.classList.add("open");
@@ -1328,7 +1332,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
   function fallback(){
     txt('整包');
     var s=document.createElement('script');
-    s.src='data.js?v=20261115a';
+    s.src='data.js?v=20261115b';
     s.onload=done;
     s.onerror=function(){ txt('失败'); if(ov) ov.querySelector('.bt').textContent='数据加载失败，请刷新重试'; };
     document.body.appendChild(s);
@@ -1337,7 +1341,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
   if(location.protocol==='file:' || !window.fetch || !window.DecompressionStream){ fallback(); return; }
   var N=5, parts=[], ok=0;
   function one(i){
-    return fetch('data.p'+i+'?v=20261115a').then(function(r){
+    return fetch('data.p'+i+'?v=20261115b').then(function(r){
       if(!r.ok) throw new Error('p'+i);
       return r.arrayBuffer();
     }).then(function(b){

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>楼盘详情 · 无锡楼市全量地图</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#0c1422"/>
+<link rel="stylesheet" href="leaflet.css"/>
+<link rel="preconnect" href="https://webrd01.is.autonavi.com">
+<style>
+:root{--bg:#070d17;--panel:#0c1422;--line:#1d2b44;--txt:#e7eef9;--mut:#8ea4c2;--mut2:#6b81a1;
+  --new:#ef4444;--sec:#3b82f6;--acc:#38bdf8}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--txt);font-size:14px;-webkit-font-smoothing:antialiased;padding-bottom:40px}
+a{color:var(--acc);text-decoration:none}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px}
+.topbar{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:rgba(7,13,23,.94);backdrop-filter:blur(10px);z-index:500}
+.topbar a{font-size:12.5px;color:#a9c2e2}
+.topbar .sp{flex:1}
+h1{font-size:22px;margin:16px 0 6px;line-height:1.3}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.b{font-size:11px;padding:2px 7px;border-radius:4px;border:1px solid}
+.b.new{color:#fca5a5;border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.1)}
+.b.sec{color:#93c5fd;border-color:rgba(59,130,246,.42);background:rgba(59,130,246,.1)}
+.b.reg{color:#a5b4c9;border-color:#2b3f5e;background:#111c2f}
+.b.acc{color:#7dd3fc;border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.09)}
+.sub{color:var(--mut);font-size:12px;line-height:1.6}
+.price{display:flex;align-items:flex-end;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--line);
+  border-radius:12px;background:linear-gradient(180deg,#101c2f,#0d1728)}
+.price .big{font-size:32px;font-weight:800;color:#ffd48a;line-height:1;letter-spacing:-1px}
+.price .u{font-size:11px;color:#8f7538;padding-bottom:4px}
+.price .r{margin-left:auto;text-align:right;font-size:10.5px;color:var(--mut2);line-height:1.6}
+#map{height:230px;border-radius:12px;margin:12px 0;border:1px solid var(--line)}
+h2{font-size:13px;color:#8fb3d9;letter-spacing:1px;margin:22px 0 10px;display:flex;align-items:center;gap:7px}
+h2::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.cell{background:#101c2f;border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.cell .k{font-size:11px;color:var(--mut2)}
+.cell .v{font-size:17px;font-weight:750;margin-top:2px;color:#dbe9fb}
+.cell .v i{font-style:normal;font-size:10px;color:var(--mut2);font-weight:400;margin-left:2px}
+.cell .v.ok{color:#4ade80}.cell .v.mid{color:#fbbf24}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:11.5px;padding:4px 9px;border-radius:6px;background:#111c2f;border:1px solid #23375a;color:#a9c2e2}
+ul.pl{list-style:none;padding:0;margin:0}
+ul.pl li{font-size:12.5px;line-height:1.7;padding:3px 0 3px 18px;position:relative;color:#b7c9de}
+ul.pl.pro li::before{content:"✓";position:absolute;left:0;color:#22c55e}
+ul.pl.con li::before{content:"✕";position:absolute;left:0;color:#f87171}
+/* 计算器 */
+.calc{border:1px solid var(--line);border-radius:12px;background:#0b1524;padding:14px}
+.calc .f{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.calc .f label{flex:1;min-width:120px;font-size:11px;color:var(--mut2)}
+.calc input,.calc select{width:100%;margin-top:4px;background:#0d1828;border:1px solid var(--line);
+  color:var(--txt);border-radius:7px;padding:7px 9px;font-size:13px;outline:none}
+.calc input:focus,.calc select:focus{border-color:var(--acc)}
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:6px}
+.out div{background:#101c2f;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.out .k{font-size:10.5px;color:var(--mut2)}
+.out .v{font-size:16px;font-weight:750;color:#ffd48a;margin-top:2px}
+.note{font-size:10.5px;color:#5f7899;line-height:1.7;margin-top:10px}
+.others a{display:flex;justify-content:space-between;padding:9px 11px;border:1px solid var(--line);
+  border-radius:8px;margin-bottom:6px;background:#0e1a2c;color:#dbe9fb;font-size:12.5px}
+.others a:hover{border-color:#3b82f6}
+.others .p{color:#ffd48a;font-weight:700}
+.btn{display:inline-block;background:#16253d;border:1px solid #27395a;color:#cfe0f7;border-radius:8px;
+  padding:8px 14px;font-size:12.5px;cursor:pointer}
+.btn:active{background:#1c2f4c}
+#loading{padding:80px 0;text-align:center;color:var(--mut2)}
+.spin{width:30px;height:30px;margin:0 auto 12px;border-radius:50%;border:3px solid #1d2b44;border-top-color:#38bdf8;
+  animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:520px){h1{font-size:19px}.price .big{font-size:27px}#map{height:190px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a href="./">← 返回地图</a><span class="sp"></span>
+    <a href="calc.html">算一算</a>
+  </div>
+  <div id="loading"><div class="spin"></div>正在加载…</div>
+  <div id="app" style="display:none"></div>
+</div>
+<script src="leaflet.js"></script>
+<script>
+(function(){
+  function loadData(cb){
+    if(window.__WX2__) return cb();
+    function fb(){var s=document.createElement('script');s.src='data.js';s.onload=cb;
+      s.onerror=function(){document.getElementById('loading').textContent='数据加载失败，请刷新';};document.body.appendChild(s);}
+    if(location.protocol==='file:'||!window.fetch||!window.DecompressionStream) return fb();
+    var N=5,parts=[],jobs=[];
+    for(var i=0;i<N;i++)(function(i){
+      jobs.push(fetch('data.p'+i,{cache:'force-cache'}).then(function(r){
+        if(!r.ok) throw 0; return r.arrayBuffer();
+      }).then(function(b){parts[i]=new Uint8Array(b);}));
+    })(i);
+    Promise.all(jobs).then(function(){
+      var t=0;for(var i=0;i<N;i++)t+=parts[i].length;
+      var all=new Uint8Array(t),o=0;
+      for(var i=0;i<N;i++){all.set(parts[i],o);o+=parts[i].length;}
+      return new Response(new Blob([all]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    }).then(function(s){(new Function(s))();cb();}).catch(fb);
+  }
+
+  function qs(k){var m=new RegExp('[?&]'+k+'=([^&]*)').exec(location.search);return m?decodeURIComponent(m[1]):'';}
+  function money(v){return v==null?'—':Math.round(v);}
+  function monthly(P,rate,years){
+    var r=rate/12/100,n=years*12;
+    if(r<=0) return P/n;
+    return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  }
+
+  window.__ON_DATA=function(){
+    var D=window.__WX2__, B=D.blocks, ITEMS=D.items;
+    ITEMS.forEach(function(it,i){it.id=i;it.bk=B[it.b];it.ll=L.latLng(it.lat,it.lng);});
+    var idx=parseInt(qs('i'),10);
+    if(isNaN(idx)||!ITEMS[idx]){document.getElementById('loading').innerHTML='没有找到该楼盘，<a href="./">回到地图</a>';return;}
+    var it=ITEMS[idx], bk=it.bk, d=it.d||{}, price=it.t==='new'?(bk.np||0):(bk.sp||0);
+    document.title=it.n+' · '+bk.n+' · 无锡楼市全量地图';
+    var tc={m:'≤500m 很方便',};
+    function cls(v){return v==null?'':(v<=500?'ok':(v<=1200?'mid':''));}
+    function cell(k,v,u){return '<div class="cell"><div class="k">'+k+'</div><div class="v '+cls(v)+'">'+
+      (v==null?'<span style="font-size:12px;color:#64748b">无数据</span>':money(v)+(u?'<i>'+u+'</i>':''))+'</div></div>';}
+    var same=ITEMS.filter(function(x){return x.b===it.b&&x.id!==it.id;})
+      .sort(function(a,b){return ((a.d&&a.d.metro)||9999)-((b.d&&b.d.metro)||9999);}).slice(0,12);
+
+    document.getElementById('app').innerHTML=
+     '<h1>'+it.n+'</h1>'
+     +'<div class="badges"><span class="b '+it.t+'">'+(it.t==='new'?'新房':'住宅小区')+'</span>'
+     +'<span class="b reg">'+it.r+'</span><span class="b acc">'+bk.n+'</span></div>'
+     +'<div class="sub">'+(it.a?it.a+' · ':'')+'坐标 '+it.lat.toFixed(4)+', '+it.lng.toFixed(4)+'</div>'
+     +'<div class="price"><div class="big">'+(price?(price/10000).toFixed(2):'—')+'</div><div class="u">万元/㎡</div>'
+     +'<div class="r">'+(it.t==='new'?'新房参考（板块）':'二手参考（板块）')+'<br>'+bk.n+'板块</div></div>'
+     +'<div id="map"></div>'
+     +'<h2>到最近配套（直线距离）</h2>'
+     +'<div class="grid">'
+     +cell('🚇 地铁站',d.metro,'m')+cell('🏫 学校',d.school,'m')+cell('🏥 医院',d.hospital,'m')
+     +cell('🛒 商场',d.mall,'m')+cell('🌳 公园',d.park,'m')
+     +'<div class="cell"><div class="k">🚶 步行到地铁</div><div class="v">'+(d.metro!=null?Math.max(1,Math.round(d.metro/75)):'—')+'<i>分钟</i></div></div>'
+     +'</div>'
+     +'<h2>预算与月供试算</h2>'
+     +'<div class="calc">'
+       +'<div class="f">'
+       +'<label>面积（㎡）<input id="cArea" type="number" value="90" min="30" max="300"></label>'
+       +'<label>首付比例<select id="cDown"><option value="0.2">20%</option><option value="0.3" selected>30%</option><option value="0.4">40%</option><option value="0.5">50%</option></select></label>'
+       +'<label>贷款年限<select id="cYear"><option>20</option><option selected>30</option></select></label>'
+       +'<label>年利率（%）<input id="cRate" type="number" value="3.05" step="0.05"></label>'
+       +'</div>'
+       +'<div class="out" id="cOut"></div>'
+       +'<div class="note">按「'+bk.n+'板块参考价 × 你填的面积」估算，非该房源真实报价；利率请按银行实际执行填写。</div>'
+     +'</div>'
+     +'<h2>板块行情</h2>'
+     +'<div class="grid">'
+     +'<div class="cell"><div class="k">新房参考</div><div class="v">'+(bk.np/10000).toFixed(2)+'<i>万/㎡</i></div></div>'
+     +'<div class="cell"><div class="k">二手参考</div><div class="v">'+(bk.sp/10000).toFixed(2)+'<i>万/㎡</i></div></div>'
+     +'<div class="cell"><div class="k">新房二手价差</div><div class="v">'+(bk.np-bk.sp)+'<i>元/㎡</i></div></div>'
+     +'<div class="cell"><div class="k">板块内点位</div><div class="v">'+bk.cnt+'<i>个</i></div></div>'
+     +'</div>'
+     +'<h2>板块配套</h2><div class="row">'
+     +'<span class="tag">🚇 '+(bk.fac.m||'—')+'</span><span class="tag">🏫 '+(bk.fac.s||'—')+'</span>'
+     +'<span class="tag">🛒 '+(bk.fac.c||'—')+'</span><span class="tag">🏥 '+(bk.fac.h||'—')+'</span>'
+     +'<span class="tag">🌳 '+(bk.fac.p||'—')+'</span></div>'
+     +'<h2>优点</h2><ul class="pl pro">'+bk.pro.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'
+     +'<h2>缺点 / 风险</h2><ul class="pl con">'+bk.con.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'
+     +'<h2>同板块其他楼盘</h2><div class="others">'
+     +same.map(function(x){return '<a href="detail.html?i='+x.id+'"><span>'+x.n+'</span>'
+        +'<span class="p">'+(((x.t==='new'?bk.np:bk.sp)/10000).toFixed(2))+'万</span></a>';}).join('')
+     +'</div>'
+     +'<div style="margin:22px 0;display:flex;gap:10px;flex-wrap:wrap">'
+     +'<button class="btn" id="shareBtn">复制本页链接</button>'
+     +'<a class="btn" href="./">回到地图看全部</a></div>'
+     +'<div class="note">数据：高德地图 POI + 公开市场行情（2026年11月）。价格为板块参考均价，非单套报价，不构成购房建议。</div>';
+
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+
+    // 小地图
+    var map=L.map('map',{center:it.ll,zoom:15,zoomControl:false,attributionControl:false,scrollWheelZoom:false});
+    L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+      {subdomains:'1234',maxZoom:18}).addTo(map);
+    L.circleMarker(it.ll,{radius:9,color:'#fff',weight:2.5,fillColor:it.t==='new'?'#ef4444':'#3b82f6',fillOpacity:1}).addTo(map);
+    setTimeout(function(){map.invalidateSize();},200);
+
+    // 月供试算
+    function calc(){
+      var area=+document.getElementById('cArea').value||90;
+      var down=+document.getElementById('cDown').value;
+      var years=+document.getElementById('cYear').value;
+      var rate=+document.getElementById('cRate').value;
+      var total=price*area/10000;            // 万元
+      var downPay=total*down;
+      var loan=total-downPay;
+      var m=monthly(loan*10000,rate,years);
+      var tax=total*0.015;                   // 契税粗估 1.5%
+      document.getElementById('cOut').innerHTML=
+        '<div><div class="k">估算总价</div><div class="v">'+total.toFixed(0)+' 万</div></div>'
+       +'<div><div class="k">首付 '+Math.round(down*100)+'%</div><div class="v">'+downPay.toFixed(0)+' 万</div></div>'
+       +'<div><div class="k">贷款</div><div class="v">'+loan.toFixed(0)+' 万</div></div>'
+       +'<div><div class="k">月供（等额本息）</div><div class="v">'+Math.round(m).toLocaleString()+' 元</div></div>'
+       +'<div><div class="k">契税粗估</div><div class="v">'+tax.toFixed(1)+' 万</div></div>';
+    }
+    ['cArea','cDown','cYear','cRate'].forEach(function(id){
+      document.getElementById(id).addEventListener('input',calc);
+      document.getElementById(id).addEventListener('change',calc);
+    });
+    calc();
+    document.getElementById('shareBtn').onclick=function(){
+      var u=location.href;
+      if(navigator.clipboard) navigator.clipboard.writeText(u).then(function(){alert('链接已复制');},function(){prompt('复制这个链接',u);});
+      else prompt('复制这个链接',u);
+    };
+  };
+
+  loadData(function(){ window.__ON_DATA(); });
+})();
+</script>
+</body>
+</html>
