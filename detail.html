@@ -42,6 +42,7 @@ h2::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--a
 .cell .k{font-size:11px;color:var(--mut2)}
 .cell .v{font-size:17px;font-weight:750;margin-top:2px;color:#dbe9fb}
 .cell .v i{font-style:normal;font-size:10px;color:var(--mut2);font-weight:400;margin-left:2px}
+.cell .sub2{font-size:9.5px;color:#7f97b6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cell .v.ok{color:#4ade80}.cell .v.mid{color:#fbbf24}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .tag{font-size:11.5px;padding:4px 9px;border-radius:6px;background:#111c2f;border:1px solid #23375a;color:#a9c2e2}
@@ -92,16 +93,18 @@ ul.pl.con li::before{content:"✕";position:absolute;left:0;color:#f87171}
     function fb(){var s=document.createElement('script');s.src='data.js';s.onload=cb;
       s.onerror=function(){document.getElementById('loading').textContent='数据加载失败，请刷新';};document.body.appendChild(s);}
     if(location.protocol==='file:'||!window.fetch||!window.DecompressionStream) return fb();
-    var N=5,parts=[],jobs=[];
-    for(var i=0;i<N;i++)(function(i){
+    var MAX=12,parts=[],jobs=[];
+    for(var i=0;i<MAX;i++)(function(i){
       jobs.push(fetch('data.p'+i,{cache:'force-cache'}).then(function(r){
         if(!r.ok) throw 0; return r.arrayBuffer();
-      }).then(function(b){parts[i]=new Uint8Array(b);}));
+      }).then(function(b){parts[i]=new Uint8Array(b);}).catch(function(){parts[i]=null;}));
     })(i);
     Promise.all(jobs).then(function(){
-      var t=0;for(var i=0;i<N;i++)t+=parts[i].length;
+      if(!parts[0]) throw 0;
+      var n=0,t=0;
+      while(n<MAX&&parts[n]){t+=parts[n].length;n++;}
       var all=new Uint8Array(t),o=0;
-      for(var i=0;i<N;i++){all.set(parts[i],o);o+=parts[i].length;}
+      for(var i=0;i<n;i++){all.set(parts[i],o);o+=parts[i].length;}
       return new Response(new Blob([all]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
     }).then(function(s){(new Function(s))();cb();}).catch(fb);
   }
@@ -123,8 +126,15 @@ ul.pl.con li::before{content:"✕";position:absolute;left:0;color:#f87171}
     document.title=it.n+' · '+bk.n+' · 无锡楼市全量地图';
     var tc={m:'≤500m 很方便',};
     function cls(v){return v==null?'':(v<=500?'ok':(v<=1200?'mid':''));}
-    function cell(k,v,u){return '<div class="cell"><div class="k">'+k+'</div><div class="v '+cls(v)+'">'+
-      (v==null?'<span style="font-size:12px;color:#64748b">无数据</span>':money(v)+(u?'<i>'+u+'</i>':''))+'</div></div>';}
+    function fn(i){
+      if(!it.x||!D.nx) return '';
+      var k=it.x[i]; if(k==null||k<0) return '';
+      var arr=D.nx[['m','s','h','c','p'][i]]||[];
+      return arr[k]||'';
+    }
+    function cell(k,v,u,nm){return '<div class="cell"><div class="k">'+k+'</div><div class="v '+cls(v)+'">'+
+      (v==null?'<span style="font-size:12px;color:#64748b">无数据</span>':money(v)+(u?'<i>'+u+'</i>':''))+'</div>'+
+      (nm?'<div class="sub2">'+nm+'</div>':'')+'</div>';}
     var same=ITEMS.filter(function(x){return x.b===it.b&&x.id!==it.id;})
       .sort(function(a,b){return ((a.d&&a.d.metro)||9999)-((b.d&&b.d.metro)||9999);}).slice(0,12);
 
@@ -138,8 +148,8 @@ ul.pl.con li::before{content:"✕";position:absolute;left:0;color:#f87171}
      +'<div id="map"></div>'
      +'<h2>到最近配套（直线距离）</h2>'
      +'<div class="grid">'
-     +cell('🚇 地铁站',d.metro,'m')+cell('🏫 学校',d.school,'m')+cell('🏥 医院',d.hospital,'m')
-     +cell('🛒 商场',d.mall,'m')+cell('🌳 公园',d.park,'m')
+     +cell('🚇 地铁站',d.metro,'m',fn(0))+cell('🏫 学校',d.school,'m',fn(1))+cell('🏥 医院',d.hospital,'m',fn(2))
+     +cell('🛒 商场',d.mall,'m',fn(3))+cell('🌳 公园',d.park,'m',fn(4))
      +'<div class="cell"><div class="k">🚶 步行到地铁</div><div class="v">'+(d.metro!=null?Math.max(1,Math.round(d.metro/75)):'—')+'<i>分钟</i></div></div>'
      +'</div>'
      +'<h2>预算与月供试算</h2>'
@@ -220,3 +230,4 @@ ul.pl.con li::before{content:"✕";position:absolute;left:0;color:#f87171}
 </script>
 </body>
 </html>
+

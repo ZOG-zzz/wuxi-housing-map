@@ -90,14 +90,16 @@ td.r{text-align:right;font-variant-numeric:tabular-nums}
     function fb(){var s=document.createElement('script');s.src='data.js';s.onload=cb;
       s.onerror=function(){document.getElementById('blocks').innerHTML='<div class="empty">数据加载失败</div>';};document.body.appendChild(s);}
     if(location.protocol==='file:'||!window.fetch||!window.DecompressionStream) return fb();
-    var N=5,parts=[],jobs=[];
-    for(var i=0;i<N;i++)(function(i){
+    var MAX=12,parts=[],jobs=[];
+    for(var i=0;i<MAX;i++)(function(i){
       jobs.push(fetch('data.p'+i,{cache:'force-cache'}).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer();})
-        .then(function(b){parts[i]=new Uint8Array(b);}));
+        .then(function(b){parts[i]=new Uint8Array(b);}).catch(function(){parts[i]=null;}));
     })(i);
     Promise.all(jobs).then(function(){
-      var t=0;for(var i=0;i<N;i++)t+=parts[i].length;
-      var all=new Uint8Array(t),o=0;for(var i=0;i<N;i++){all.set(parts[i],o);o+=parts[i].length;}
+      if(!parts[0]) throw 0;
+      var n=0,t=0;
+      while(n<MAX&&parts[n]){t+=parts[n].length;n++;}
+      var all=new Uint8Array(t),o=0;for(var i=0;i<n;i++){all.set(parts[i],o);o+=parts[i].length;}
       return new Response(new Blob([all]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
     }).then(function(s){(new Function(s))();cb();}).catch(fb);
   }

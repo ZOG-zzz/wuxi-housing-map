@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
@@ -794,6 +794,7 @@ select{cursor:pointer}
 .dcell .k{font-size:9px;color:#7f97b6}
 .dcell .v{font-size:13px;font-weight:750;color:#dbe9fb;font-variant-numeric:tabular-nums;margin-top:1px}
 .dcell .v i{font-style:normal;font-size:9px;color:#6b81a1;font-weight:400;margin-left:1px}
+.dcell .sub2{font-size:9.5px;color:#7f97b6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dcell .v.ok{color:#4ade80}.dcell .v.mid{color:#fbbf24}.dcell .v.no{color:#94a3b8}
 .pricemap{padding:2px 14px 6px;font-size:10.5px;color:#8ea4c2;line-height:1.7}
 .pricemap b{color:#cfe0f7}
@@ -885,7 +886,7 @@ select{cursor:pointer}
         </select>
         <button class="btn" id="fitBtn">定位结果</button>
       </div>
-      <div class="fg"><input class="inp" id="fKw" placeholder="搜索楼盘/小区名、板块、地址"/></div>
+      <div class="fg"><input class="inp" id="fKw" placeholder="搜楼盘 / 小区 / 地铁站 / 学校，如：三阳广场、天一中学"/></div>
       <div class="fg row2"><button class="btn wide" id="resetBtn">重置筛选</button></div>
     </div>
     <div class="listwrap" id="list"></div>
@@ -912,7 +913,7 @@ select{cursor:pointer}
   </main>
 </div>
 <div id="loaderr">地图组件加载失败：请检查网络（需能访问 unpkg.com）。</div>
-<script src="leaflet.js?v=20261115c"></script>
+<script src="leaflet.js?v=20261115d"></script>
 <script>
 (function(){
 "use strict";
@@ -1156,6 +1157,7 @@ function getList(){
     if(state.tiers.size && !state.tiers.has(tier(priceOf(it)))) return false;
     if(kw){
       var s=(it.n+" "+(it.a||"")+" "+it.r+" "+(it.bk?it.bk.n:"")).toLowerCase();
+    if(it.x&&D&&D.nx){ var _c=["m","s","h","c","p"]; for(var _i=0;_i<5;_i++){ var _k=it.x[_i]; if(_k>=0&&(D.nx[_c[_i]]||[])[_k]) s+=" "+(D.nx[_c[_i]][_k]).toLowerCase(); } }
       if(s.indexOf(kw)<0) return false;
     }
     return true;
@@ -1330,8 +1332,17 @@ function closeDrawer(){
   drawer.classList.remove("open"); drawer.innerHTML=""; state.sel=null; hideSel();
   Array.prototype.forEach.call(document.querySelectorAll(".card.sel"),function(c){c.classList.remove("sel");});
 }
-function dcell(k,v,unit,cls){
-  return '<div class="dcell"><div class="k">'+k+'</div><div class="v '+(cls||"")+'">'+v+(unit?'<i>'+unit+'</i>':'')+'</div></div>';
+function dcell(k,v,unit,cls,sub){
+  return '<div class="dcell"><div class="k">'+k+'</div><div class="v '+(cls||"")+'">'+v+(unit?'<i>'+unit+'</i>':'')+'</div>'
+    +(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>';
+}
+function facOf(it,i){
+  if(!it.x||!D||!D.nx) return "";
+  var idx=it.x[i];
+  if(idx==null||idx<0) return "";
+  var cat=["m","s","h","c","p"][i];
+  var arr=D.nx[cat]||[];
+  return arr[idx]||"";
 }
 function openItem(it,focus){
   state.sel=it.id;
@@ -1352,11 +1363,11 @@ function openItem(it,focus){
    +'<div style="margin-left:auto;font-size:9px;color:#7f97b6;text-align:right">'+(it.t==="new"?"新房 · 售楼处点位":"二手住宅小区")+'</div></div>'
    +'<div class="sec-t">到最近配套（直线距离 · 高德实测）</div>'
    +'<div class="dgrid">'
-   +dcell("🚇 最近地铁站",mval(d.metro),"m",mcls(d.metro))
-   +dcell("🏫 最近学校",mval(d.school),"m",mcls(d.school))
-   +dcell("🏥 最近医院",mval(d.hospital),"m",mcls(d.hospital))
-   +'<div class="dcell"><div class="k">🛒 最近商场</div><div class="v">'+mval(d.mall)+'<i>m</i></div></div>'
-   +'<div class="dcell"><div class="k">🌳 最近公园</div><div class="v">'+mval(d.park)+'<i>m</i></div></div>'
+   +dcell("🚇 最近地铁站",mval(d.metro),"m",mcls(d.metro),facOf(it,0))
+   +dcell("🏫 最近学校",mval(d.school),"m",mcls(d.school),facOf(it,1))
+   +dcell("🏥 最近医院",mval(d.hospital),"m",mcls(d.hospital),facOf(it,2))
+   +'<div class="dcell"><div class="k">🛒 最近商场</div><div class="v">'+mval(d.mall)+'<i>m</i></div>'+(facOf(it,3)?'<div class="sub2">'+facOf(it,3)+'</div>':'')+'</div>'
+   +'<div class="dcell"><div class="k">🌳 最近公园</div><div class="v">'+mval(d.park)+'<i>m</i></div>'+(facOf(it,4)?'<div class="sub2">'+facOf(it,4)+'</div>':'')+'</div>'
    +'<div class="dcell"><div class="k">🚶 步行到地铁</div><div class="v">'+(d.metro!=null?Math.max(1,Math.round(d.metro/75)):"—")+'<i>分钟</i></div></div>'
    +'</div>'
    +'<div class="sec-t">板块价格关系</div>'
@@ -1417,6 +1428,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
 
 
 
+
 </script>
 <script>
 (function(){
@@ -1427,16 +1439,16 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
   function fallback(){
     txt('整包');
     var s=document.createElement('script');
-    s.src='data.js?v=20261115c';
+    s.src='data.js?v=20261115d';
     s.onload=done;
     s.onerror=function(){ txt('失败'); if(ov) ov.querySelector('.bt').textContent='数据加载失败，请刷新重试'; };
     document.body.appendChild(s);
   }
   if(window.__WX2__){ done(); return; }
   if(location.protocol==='file:' || !window.fetch || !window.DecompressionStream){ fallback(); return; }
-  var N=5, parts=[], ok=0;
+  var N=6, parts=[], ok=0;
   function one(i){
-    return fetch('data.p'+i+'?v=20261115c').then(function(r){
+    return fetch('data.p'+i+'?v=20261115d').then(function(r){
       if(!r.ok) throw new Error('p'+i);
       return r.arrayBuffer();
     }).then(function(b){
