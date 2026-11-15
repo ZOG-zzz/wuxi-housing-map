@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>无锡楼市全量地图｜6744个真实楼盘小区 · 精确坐标 · 配套距离</title>
+<link rel="stylesheet" href="leaflet.css"/>
+<style>
+:root{
+  --bg:#070d17;--panel:#0c1422;--line:#1d2b44;--line2:#27395a;--txt:#e7eef9;--mut:#8ea4c2;--mut2:#6b81a1;
+  --new:#ef4444;--sec:#3b82f6;--acc:#38bdf8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--txt);font-size:13px;-webkit-font-smoothing:antialiased}
+button,input,select{font-family:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#243550;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+#app{display:flex;height:100%}
+/* sidebar */
+#side{width:352px;flex:0 0 352px;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#0c1422,#080e19);border-right:1px solid var(--line);z-index:1200}
+.side-head{padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.brand{font-size:16px;font-weight:750;letter-spacing:.4px;display:flex;align-items:center;gap:8px}
+.brand i{width:6px;height:17px;border-radius:3px;background:linear-gradient(180deg,#38bdf8,#2563eb)}
+.brand em{font-style:normal;font-size:9px;padding:1px 5px;border-radius:4px;background:#1d4ed8;color:#fff;letter-spacing:.5px}
+.sub{font-size:10.5px;color:var(--mut);line-height:1.6;margin-top:5px}
+.sub b{color:#bfd4ef}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:9px 11px;border-bottom:1px solid var(--line)}
+.kpi>div{background:#101c2f;border:1px solid var(--line);border-radius:8px;padding:6px 7px;min-width:0}
+.kpi b{display:block;font-size:14px;font-weight:750;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi small{display:block;font-size:9px;color:var(--mut2);margin-top:1px;white-space:nowrap}
+.filters{padding:8px 11px 9px;border-bottom:1px solid var(--line);overflow:auto;max-height:46vh}
+.fg{margin-bottom:8px}.fg:last-child{margin-bottom:0}
+.fl{font-size:10px;color:var(--mut2);margin-bottom:4px;display:flex;justify-content:space-between}
+.fl .hint{font-size:9px;color:#4d6483}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{border:1px solid var(--line2);background:#101c2f;color:#b7cae4;border-radius:5px;font-size:10.5px;
+  padding:3px 7px;cursor:pointer;transition:.14s;user-select:none;display:flex;align-items:center;gap:4px}
+.chip:hover{border-color:#3a5580;color:#dbe9fb}
+.chip.on{background:linear-gradient(180deg,#1b3a63,#14294a);border-color:#3b82f6;color:#fff}
+.chip .dot{width:5px;height:5px;border-radius:50%;flex:0 0 5px}
+.row2{display:flex;gap:6px;align-items:center}.row2>*{flex:1;min-width:0}
+select,.inp{background:#0d1828;border:1px solid var(--line2);color:#c3d5ec;border-radius:6px;
+  padding:6px 7px;font-size:11px;outline:none;width:100%}
+select{cursor:pointer}
+.inp:focus{border-color:#3b82f6}
+.inp::placeholder{color:#4f6584}
+.btn{background:#16253d;border:1px solid var(--line2);color:#cfe0f7;border-radius:6px;
+  padding:6px 9px;font-size:10.5px;cursor:pointer;transition:.15s}
+.btn:hover{background:#1c2f4c;color:#fff}
+.btn.wide{flex:1}
+.listwrap{flex:1;overflow:auto;padding:4px 7px 24px}
+.lcount{font-size:9.5px;color:var(--mut2);padding:5px 5px 3px;display:flex;justify-content:space-between}
+.card{padding:7px 8px;border:1px solid transparent;border-radius:8px;cursor:pointer;margin-bottom:1px;transition:.12s}
+.card:hover{background:#101c2f;border-color:#1e3050}
+.card.sel{background:linear-gradient(90deg,#132540,#0e1a2c);border-color:#2f5a92}
+.c-top{display:flex;justify-content:space-between;gap:5px;align-items:flex-start}
+.nm{font-size:12px;font-weight:650;color:#eaf2fd;line-height:1.3}
+.pill{font-size:8.5px;padding:1px 4px;border-radius:3px;flex:0 0 auto;font-weight:600}
+.pill.new{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+.pill.sec{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.32)}
+.c-mid{display:flex;justify-content:space-between;margin-top:2px;gap:6px;align-items:baseline}
+.pr{font-size:11.5px;font-weight:750;color:#ffd48a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pr small{font-size:8.5px;color:#a2833f;font-weight:500}
+.blk{font-size:9.5px;color:var(--mut2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-tags{font-size:9.5px;color:#5f7899;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.more{width:100%;margin:8px 0;padding:8px;font-size:11px}
+.empty{padding:36px 14px;text-align:center;color:var(--mut2);line-height:1.8;font-size:11px}
+/* map */
+#mapwrap{flex:1;position:relative;min-width:0;background:#dde6f0}
+#map{position:absolute;inset:0;background:#dfe8f2}
+.leaflet-container{font-family:inherit;background:#dfe8f2}
+.mapbar{position:absolute;top:9px;left:9px;z-index:900;display:flex;gap:5px;flex-wrap:wrap;max-width:calc(100% - 18px)}
+.seg{display:flex;background:rgba(10,17,29,.92);border:1px solid #2a3d5c;border-radius:7px;overflow:hidden;
+  backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.seg button{background:transparent;border:0;color:#93a9c7;font-size:10px;padding:5px 8px;cursor:pointer;
+  border-right:1px solid #1e2f49;white-space:nowrap;transition:.15s}
+.seg button:last-child{border-right:0}
+.seg button.on{background:linear-gradient(180deg,#1d4ed8,#1a3f8f);color:#fff;font-weight:600}
+.mapbtn{background:rgba(10,17,29,.92);border:1px solid #2a3d5c;color:#a8bdd9;border-radius:7px;
+  font-size:10px;padding:5px 8px;cursor:pointer;backdrop-filter:blur(8px)}
+.mapbtn:hover{color:#fff}
+.legend{position:absolute;left:9px;bottom:56px;z-index:900;background:rgba(10,17,29,.92);
+  border:1px solid #2a3d5c;border-radius:8px;padding:7px 9px;font-size:9.5px;color:#b9cce4;line-height:1.65;max-width:200px}
+.legend .lt{color:#7f97b6;margin-bottom:3px;letter-spacing:.4px}
+.legend .li{display:flex;align-items:center;gap:5px}
+.legend .sw{width:10px;height:10px;border-radius:50%;border:1.4px solid #fff;flex:0 0 10px}
+.notice{position:absolute;left:9px;bottom:9px;z-index:900;max-width:min(470px,calc(100% - 240px));
+  font-size:9px;color:#8fa6c4;background:rgba(10,17,29,.88);border:1px solid #24365a;border-radius:6px;
+  padding:4px 7px;line-height:1.5;backdrop-filter:blur(8px)}
+.notice b{color:#e2b04a}
+#tip{position:absolute;z-index:1000;pointer-events:none;background:rgba(9,15,26,.95);border:1px solid #2b4265;
+  border-radius:6px;padding:4px 7px;font-size:10.5px;color:#e7eef9;display:none;white-space:nowrap;
+  box-shadow:0 6px 18px rgba(0,0,0,.4)}
+#tip b{color:#fff;font-size:11px}#tip i{font-style:normal;color:#93c5fd}
+/* drawer */
+.drawer{position:absolute;top:0;right:0;height:100%;width:392px;max-width:100%;
+  background:linear-gradient(180deg,rgba(9,15,26,.985),rgba(7,12,21,.99));border-left:1px solid #22334e;
+  z-index:1100;overflow:auto;transform:translateX(104%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:-12px 0 40px rgba(0,0,0,.45)}
+.drawer.open{transform:none}
+.dw-close{position:absolute;top:9px;right:9px;width:24px;height:24px;border-radius:6px;background:#16253d;
+  border:1px solid #27395a;color:#a8bdd9;cursor:pointer;font-size:14px;line-height:1;z-index:3}
+.dw-head{padding:14px 14px 10px;border-bottom:1px solid #1a2740}
+.dw-badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.b{font-size:9px;padding:1px 5px;border-radius:3px;border:1px solid;letter-spacing:.2px}
+.b.new{color:#fca5a5;border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.1)}
+.b.sec{color:#93c5fd;border-color:rgba(59,130,246,.42);background:rgba(59,130,246,.1)}
+.b.reg{color:#a5b4c9;border-color:#2b3f5e;background:#111c2f}
+.b.acc{color:#7dd3fc;border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.09)}
+.dw-head h2{font-size:16px;margin:0 0 4px;line-height:1.3;font-weight:750}
+.dw-sub{font-size:10px;color:var(--mut2);line-height:1.55}
+.sec-t{padding:11px 14px 5px;font-size:10px;color:#7f97b6;letter-spacing:.8px;display:flex;align-items:center;gap:5px}
+.sec-t::before{content:"";width:3px;height:9px;border-radius:2px;background:#3b82f6}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:2px 14px 6px}
+.dcell{background:#101c2f;border:1px solid #1d2b44;border-radius:7px;padding:6px 8px}
+.dcell .k{font-size:9px;color:#7f97b6}
+.dcell .v{font-size:13px;font-weight:750;color:#dbe9fb;font-variant-numeric:tabular-nums;margin-top:1px}
+.dcell .v i{font-style:normal;font-size:9px;color:#6b81a1;font-weight:400;margin-left:1px}
+.dcell .v.ok{color:#4ade80}.dcell .v.mid{color:#fbbf24}.dcell .v.no{color:#94a3b8}
+.pricemap{padding:2px 14px 6px;font-size:10.5px;color:#8ea4c2;line-height:1.7}
+.pricemap b{color:#cfe0f7}
+.pricemap .gap{color:#f0b429}
+.fac{font-size:10.5px;line-height:1.55}
+.fac div{display:flex;gap:6px;padding:4px 14px;border-top:1px solid #142034}
+.fac div:first-child{border-top:0}
+.fac i{font-style:normal;flex:0 0 14px}
+.fac span{color:#a9bdd6}
+.pc{padding:0 14px 3px}.pc ul{list-style:none;padding:0;margin:0}
+.pc li{font-size:10.5px;line-height:1.55;padding:3px 0 3px 14px;position:relative;color:#a9bdd6}
+.pc li::before{position:absolute;left:0;top:3px;font-size:9px}
+.pc.pro li::before{content:"✓";color:#22c55e}
+.pc.con li::before{content:"✕";color:#f87171}
+.dw-foot{margin-top:6px;padding:9px 14px 20px;border-top:1px solid #142034;font-size:9px;color:#566d8c;line-height:1.65}
+#loaderr{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:3000;
+  background:rgba(7,13,23,.96);color:#cfe0f7;font-size:13px;line-height:2;padding:30px;text-align:center}
+#menuBtn{display:none}
+@media(max-width:900px){
+  #side{position:absolute;left:0;top:0;height:100%;width:88%;max-width:330px;transform:translateX(-102%);
+    transition:transform .28s;box-shadow:12px 0 40px rgba(0,0,0,.5)}
+  #side.open{transform:none}
+  #menuBtn{display:flex;align-items:center;justify-content:center;position:absolute;top:9px;right:9px;z-index:1000;
+    width:32px;height:32px;border-radius:8px;background:rgba(10,17,29,.92);border:1px solid #2a3d5c;color:#cfe0f7;font-size:14px}
+  .drawer{width:100%}.notice{max-width:calc(100% - 18px);font-size:8.5px}
+  .legend{bottom:52px}
+}
+#bootov{position:absolute;inset:0;z-index:2000;background:linear-gradient(180deg,#0c1422,#080e19);
+  display:flex;align-items:center;justify-content:center;color:#cfe0f7}
+#bootov .bo{text-align:center}
+#bootov .bt{font-size:14px;margin-top:14px;letter-spacing:.5px}
+#bootov .bs{font-size:10.5px;color:#6b81a1;margin-top:6px}
+#bootov .spin{width:34px;height:34px;margin:0 auto;border-radius:50%;border:3px solid #1d2b44;
+  border-top-color:#38bdf8;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="side-head">
+      <div class="brand"><i></i>无锡楼市全量地图<em>全量精确版</em></div>
+      <div class="sub">高德 POI 实测坐标 ｜ <b>6,744</b> 个楼盘/小区 ｜ <b>57</b> 个板块 ｜ 数据基准 <b>2026年11月</b></div>
+    </div>
+    <div class="kpi">
+      <div><b id="kCnt">–</b><small>当前点位</small></div>
+      <div><b id="kNew">–</b><small>新房(售楼处)</small></div>
+      <div><b id="kSec">–</b><small>住宅小区</small></div>
+    </div>
+    <div class="filters">
+      <div class="fg"><div class="fl">区域 <span class="hint">可多选</span></div><div class="chips" id="fRegions"></div></div>
+      <div class="fg"><div class="fl">类型</div><div class="chips" id="fTypes"></div></div>
+      <div class="fg"><div class="fl">板块</div><select id="fBlock"></select></div>
+      <div class="fg"><div class="fl">到最近地铁站</div><div class="chips" id="fMetro"></div></div>
+      <div class="fg"><div class="fl">单价区间（板块参考价）</div><div class="chips" id="fTiers"></div></div>
+      <div class="fg row2">
+        <select id="fSort">
+          <option value="d">默认排序</option>
+          <option value="m">地铁近→远</option>
+          <option value="s">学校近→远</option>
+          <option value="p">单价高→低</option>
+          <option value="pa">单价低→高</option>
+        </select>
+        <button class="btn" id="fitBtn">定位结果</button>
+      </div>
+      <div class="fg"><input class="inp" id="fKw" placeholder="搜索楼盘/小区名、板块、地址"/></div>
+      <div class="fg row2"><button class="btn wide" id="resetBtn">重置筛选</button></div>
+    </div>
+    <div class="listwrap" id="list"></div>
+  </aside>
+  <main id="mapwrap">
+    <div id="map"></div>
+<div id="bootov"><div class="bo"><div class="spin"></div><div class="bt">正在加载无锡楼市数据…</div><div class="bs">6,744 个楼盘 / 57 个板块</div></div></div>
+    <div id="menuBtn">☰</div>
+    <div class="mapbar">
+      <div class="seg" id="colorSeg">
+        <button data-cm="type" class="on">按类型</button><button data-cm="price">按价格</button>
+      </div>
+      <div class="seg" id="baseSeg">
+        <button data-base="amap" class="on">高德底图</button><button data-base="carto">浅色</button>
+      </div>
+      <button class="mapbtn" id="fitCity">全市视野</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="notice"><b>数据</b>：坐标与配套距离来自高德地图 POI 实测（住宅区 6,111 / 售楼处 633），价格为所属板块参考均价，非单套报价。</div>
+    <div id="tip"></div>
+    <div class="drawer" id="drawer"></div>
+  </main>
+</div>
+<div id="loaderr">地图组件加载失败：请确认 app 目录下 leaflet.js / data.js 完整。</div>
+<script src="leaflet.js"></script>
+<script>
+window.__BOOT=function(){
+"use strict";
+var L=window.L, D=window.__WX2__;
+if(!L||!D){document.getElementById('loaderr').style.display='flex';return;}
+var BLK=D.blocks, ITEMS=D.items;
+ITEMS.forEach(function(it,i){ it.id=i; it.bk=BLK[it.b]; it.ll=L.latLng(it.lat,it.lng); });
+var REGS=["梁溪区","滨湖区","经开区","新吴区","锡山区","惠山区","江阴市","宜兴市"];
+var REG_C={"梁溪区":"#f472b6","滨湖区":"#38bdf8","经开区":"#fbbf24","新吴区":"#a78bfa","锡山区":"#34d399","惠山区":"#fb923c","江阴市":"#60a5fa","宜兴市":"#4ade80"};
+var TYPE_L={new:"新房",sec:"住宅小区"};
+var TIER_C=["#22c55e","#84cc16","#eab308","#f97316","#ef4444","#b91c1c"];
+var TIER_N=["≤1万","1–1.5万","1.5–2万","2–2.5万","2.5–3万",">3万"];
+var METRO_F=[["m0","不限",1e9],["m5","≤500m",500],["m10","≤1km",1000],["m15","≤1.5km",1500]];
+function tier(p){ if(p<10000)return 0; if(p<15000)return 1; if(p<20000)return 2; if(p<25000)return 3; if(p<30000)return 4; return 5; }
+function priceOf(it){ var b=it.bk; return it.t==="new"? (b.np||0) : (b.sp||0); }
+function fmtP(p){ return p? (p/10000).toFixed(2)+"万" : "—"; }
+
+var state={regs:new Set(),types:"all",block:"",metro:1e9,tiers:new Set(),kw:"",sort:"d",cm:"type",base:"amap",sel:null};
+
+/* ---------- 地图 ---------- */
+var map=L.map("map",{center:[31.60,120.30],zoom:11,minZoom:9,maxZoom:18,zoomControl:false,
+  attributionControl:true,preferCanvas:false});
+map.attributionControl.setPrefix("");
+L.control.zoom({position:"bottomright"}).addTo(map);
+var baseAmap=L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}",
+  {subdomains:"1234",maxZoom:18,attribution:"底图 © 高德"});
+var baseCarto=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  {subdomains:"abcd",maxZoom:19,attribution:"底图 © CARTO · OSM"});
+baseAmap.addTo(map);
+var useGCJ=true;
+function gcj(lat,lng){ // WGS->GCJ
+  if(!(lng>73.66&&lng<135.05&&lat>3.86&&lat<53.55)) return [lat,lng];
+  var PI=Math.PI,AX=6378245,EE=0.00669342162296594323;
+  var dLat=function(x,y){var r=-100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));
+    r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;r+=(20*Math.sin(y*PI)+40*Math.sin(y/3*PI))*2/3;
+    r+=(160*Math.sin(y/12*PI)+320*Math.sin(y*PI/30))*2/3;return r;};
+  var dLng=function(x,y){var r=300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));
+    r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;r+=(20*Math.sin(x*PI)+40*Math.sin(x/3*PI))*2/3;
+    r+=(150*Math.sin(x/12*PI)+300*Math.sin(x/30*PI))*2/3;return r;};
+  var d1=dLat(lng-105,lat-35), d2=dLng(lng-105,lat-35);
+  var rad=lat/180*PI, mg=Math.sin(rad); mg=1-EE*mg*mg; var sq=Math.sqrt(mg);
+  d1=(d1*180)/((AX*(1-EE))/(mg*sq)*PI);
+  d2=(d2*180)/(AX/sq*Math.cos(rad)*PI);
+  return [lat+d1,lng+d2];
+}
+function gcj2wgs(lat,lng){
+  var g=gcj(lat,lng);
+  return [lat-(g[0]-lat), lng-(g[1]-lng)];
+}
+function rebuildLL(){ // 高德点位本身是 GCJ-02，切到 WGS-84 底图时反向偏移
+  for(var i=0;i<ITEMS.length;i++){
+    var it=ITEMS[i];
+    var p=useGCJ?[it.lat,it.lng]:gcj2wgs(it.lat,it.lng);
+    it.ll=L.latLng(p[0],p[1]);
+  }
+}
+
+/* ---------- Canvas 图层 ---------- */
+var cur=[], proj=[], clusters=[];
+var CanvasLayer=L.Layer.extend({
+  onAdd:function(m){
+    var p=m.getPane("overlayPane");
+    this._c=L.DomUtil.create("canvas","leaflet-layer");
+    this._c.style.position="absolute";
+    this._c.style.pointerEvents="none";
+    p.appendChild(this._c);
+    m.on("moveend zoomend resize viewreset",this.draw,this);
+    m.on("mousemove",this._move,this);
+    m.on("click",this._click,this);
+    m.getContainer().addEventListener("mouseleave",function(){
+      var t=document.getElementById("tip"); t.style.display="none";
+    });
+    this.draw();
+  },
+  onRemove:function(m){
+    L.DomUtil.remove(this._c);
+    m.off("moveend zoomend resize viewreset",this.draw,this);
+    m.off("mousemove",this._move,this);
+    m.off("click",this._click,this);
+  },
+  draw:function(){
+    var m=this._map, size=m.getSize(), dpr=window.devicePixelRatio||1;
+    var cv=this._c, ctx=cv.getContext("2d");
+    var tl=m.containerPointToLayerPoint([0,0]);
+    L.DomUtil.setPosition(cv,tl);
+    cv.width=size.x*dpr; cv.height=size.y*dpr;
+    cv.style.width=size.x+"px"; cv.style.height=size.y+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,size.x,size.y);
+    var z=m.getZoom(), agg=z<13;
+    proj=[]; clusters=[];
+    if(agg){
+      var cell=62, buckets={};
+      for(var i=0;i<cur.length;i++){
+        var it=cur[i], pt=m.latLngToContainerPoint(it.ll);
+        if(pt.x<-40||pt.y<-40||pt.x>size.x+40||pt.y>size.y+40) continue;
+        var k=Math.floor(pt.x/cell)+"_"+Math.floor(pt.y/cell);
+        var b=buckets[k]||(buckets[k]={x:0,y:0,n:0,price:0,lat:0,lng:0});
+        b.x+=pt.x; b.y+=pt.y; b.n++; b.price+=priceOf(it); b.lat+=it.lat; b.lng+=it.lng;
+      }
+      Object.keys(buckets).forEach(function(k){
+        var b=buckets[k], cx=b.x/b.n, cy=b.y/b.n;
+        var r=Math.min(26,9+Math.sqrt(b.n)*2.2);
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,6.2832);
+        var g=ctx.createRadialGradient(cx-r*0.3,cy-r*0.35,1,cx,cy,r);
+        g.addColorStop(0,"rgba(56,189,248,.92)"); g.addColorStop(1,"rgba(29,78,216,.9)");
+        ctx.fillStyle=g; ctx.fill();
+        ctx.lineWidth=1.8; ctx.strokeStyle="rgba(255,255,255,.9)"; ctx.stroke();
+        ctx.fillStyle="#fff"; ctx.font="bold "+(b.n>99?11:12)+"px -apple-system,sans-serif";
+        ctx.textAlign="center"; ctx.textBaseline="middle";
+        ctx.fillText(b.n>999?(b.n/1000).toFixed(1)+"k":b.n,cx,cy);
+        clusters.push({x:cx,y:cy,n:b.n,lat:b.lat/b.n,lng:b.lng/b.n,p:b.price/b.n});
+      });
+    }else{
+      for(var j=0;j<cur.length;j++){
+        var it2=cur[j], q=m.latLngToContainerPoint(it2.ll);
+        if(q.x<-20||q.y<-20||q.x>size.x+20||q.y>size.y+20) continue;
+        var col=state.cm==="type"?(it2.t==="new"?"#ef4444":"#2563eb"):TIER_C[tier(priceOf(it2))];
+        var r2=it2.t==="new"?4.4:3.4;
+        ctx.beginPath(); ctx.arc(q.x,q.y,r2,0,6.2832);
+        ctx.fillStyle=col; ctx.fill();
+        ctx.lineWidth=1; ctx.strokeStyle="rgba(255,255,255,.75)"; ctx.stroke();
+        proj.push({x:q.x,y:q.y,it:it2});
+      }
+    }
+  },
+  _hit:function(e,rad){
+    var p=e.containerPoint, best=null, bd=rad*rad;
+    for(var i=0;i<proj.length;i++){
+      var d=(proj[i].x-p.x)*(proj[i].x-p.x)+(proj[i].y-p.y)*(proj[i].y-p.y);
+      if(d<bd){bd=d;best=proj[i];}
+    }
+    return best;
+  },
+  _move:function(e){
+    var tip=document.getElementById("tip");
+    var h=this._hit(e,12);
+    if(h){
+      var it=h.it, b=it.bk;
+      tip.innerHTML="<b>"+it.n+"</b> · <i>"+TYPE_L[it.t]+"</i><br><span style='color:#8ea4c2'>"+b.n+" · 参考 "+fmtP(priceOf(it))+"/㎡"+
+        (it.d&&it.d.metro!=null?" · 地铁 "+it.d.metro+"m":"")+"</span>";
+      tip.style.display="block";
+      tip.style.left=Math.min(e.containerPoint.x+14,map.getSize().x-210)+"px";
+      tip.style.top=(e.containerPoint.y+14)+"px";
+      map.getContainer().style.cursor="pointer";
+    }else{
+      tip.style.display="none";
+      map.getContainer().style.cursor="";
+    }
+  },
+  _click:function(e){
+    var h=this._hit(e,12);
+    if(h){ openItem(h.it,true); return; }
+    for(var i=0;i<clusters.length;i++){
+      var c=clusters[i], dx=c.x-e.containerPoint.x, dy=c.y-e.containerPoint.y;
+      if(dx*dx+dy*dy<900){ map.setView([c.lat,c.lng],Math.min(17,map.getZoom()+2)); return; }
+    }
+    closeDrawer();
+  }
+});
+var layer=new CanvasLayer();
+map.addLayer(layer);
+map.on("zoomend",function(){ layer.draw(); });
+
+/* ---------- 筛选 ---------- */
+function getList(){
+  var kw=state.kw.trim().toLowerCase();
+  return ITEMS.filter(function(it){
+    if(state.regs.size && !state.regs.has(it.r) && !(it.bk && state.regs.has(it.bk.r))) return false;
+    if(state.types!=="all" && it.t!==state.types) return false;
+    if(state.block && it.b!==+state.block) return false;
+    if(state.metro<1e8){
+      if(!it.d || it.d.metro==null || it.d.metro>state.metro) return false;
+    }
+    if(state.tiers.size && !state.tiers.has(tier(priceOf(it)))) return false;
+    if(kw){
+      var s=(it.n+" "+(it.a||"")+" "+it.r+" "+(it.bk?it.bk.n:"")).toLowerCase();
+      if(s.indexOf(kw)<0) return false;
+    }
+    return true;
+  });
+}
+function sortList(a){
+  if(state.sort==="m") a.sort(function(x,y){return (x.d&&x.d.metro!=null?x.d.metro:9e9)-(y.d&&y.d.metro!=null?y.d.metro:9e9);});
+  else if(state.sort==="s") a.sort(function(x,y){return (x.d&&x.d.school!=null?x.d.school:9e9)-(y.d&&y.d.school!=null?y.d.school:9e9);});
+  else if(state.sort==="p") a.sort(function(x,y){return priceOf(y)-priceOf(x);});
+  else if(state.sort==="pa") a.sort(function(x,y){return priceOf(x)-priceOf(y);});
+  return a;
+}
+
+/* ---------- 列表 ---------- */
+var page=0, PAGE=120;
+function renderList(list,reset){
+  var box=document.getElementById("list");
+  if(reset) page=0;
+  if(!list.length){ box.innerHTML='<div class="empty">没有符合条件的点位<br>试试放宽地铁距离或价格区间</div>'; return; }
+  var show=list.slice(0,page*PAGE+PAGE);
+  var h='<div class="lcount"><span>共 '+list.length+' 个</span><span>'+(show.length<list.length?"已显示 "+show.length:"全部")+'</span></div>';
+  for(var i=0;i<show.length;i++){
+    var it=show[i], b=it.bk;
+    h+='<div class="card'+(state.sel===it.id?" sel":"")+'" data-id="'+it.id+'">'
+      +'<div class="c-top"><span class="nm">'+it.n+'</span><span class="pill '+it.t+'">'+TYPE_L[it.t]+'</span></div>'
+      +'<div class="c-mid"><span class="pr">'+(priceOf(it)?(priceOf(it)/10000).toFixed(2):"—")+'<small>万/㎡</small></span>'
+      +'<span class="blk">'+b.n+'</span></div>'
+      +'<div class="c-tags">'+(it.d&&it.d.metro!=null?"地铁 "+it.d.metro+"m · ":"")+(it.d&&it.d.school!=null?"学校 "+it.d.school+"m":"")+'</div></div>';
+  }
+  if(show.length<list.length) h+='<button class="btn more" id="moreBtn">加载更多（还有 '+(list.length-show.length)+' 个）</button>';
+  box.innerHTML=h;
+  var mb=document.getElementById("moreBtn");
+  if(mb) mb.onclick=function(){ page++; renderList(list,false); };
+}
+
+var lastList=[];
+function render(){
+  var list=sortList(getList());
+  lastList=list;
+  cur=list;
+  layer.draw();
+  renderList(list,true);
+  renderStats(list);
+  renderLegend();
+}
+
+function renderStats(list){
+  var nw=0; for(var i=0;i<list.length;i++) if(list[i].t==="new") nw++;
+  document.getElementById("kCnt").textContent=list.length.toLocaleString();
+  document.getElementById("kNew").textContent=nw.toLocaleString();
+  document.getElementById("kSec").textContent=(list.length-nw).toLocaleString();
+}
+
+function renderLegend(){
+  var el=document.getElementById("legend"), h="";
+  if(state.cm==="type"){
+    h+='<div class="lt">点位着色</div><div class="li"><span class="sw" style="background:#ef4444"></span>新房（售楼处）</div>'
+      +'<div class="li"><span class="sw" style="background:#2563eb"></span>住宅小区（二手）</div>'
+      +'<div class="li" style="color:#7f97b6;margin-top:3px">放大到 13 级显示单点</div>';
+  }else{
+    h+='<div class="lt">板块参考价（元/㎡）</div>';
+    for(var i=0;i<6;i++) h+='<div class="li"><span class="sw" style="background:'+TIER_C[i]+'"></span>'+TIER_N[i]+'</div>';
+  }
+  el.innerHTML=h;
+}
+
+/* ---------- 控件 ---------- */
+function buildUI(){
+  var rEl=document.getElementById("fRegions"), h="";
+  REGS.forEach(function(r){
+    var n=0; for(var i=0;i<ITEMS.length;i++) if(ITEMS[i].r===r||(ITEMS[i].bk&&ITEMS[i].bk.r===r)) n++;
+    h+='<span class="chip" data-reg="'+r+'"><span class="dot" style="background:'+REG_C[r]+'"></span>'+r+"<span style='color:#6f88a8;font-size:9px'>"+n+"</span></span>";
+  });
+  rEl.innerHTML=h;
+  Array.prototype.forEach.call(rEl.children,function(c){
+    c.onclick=function(){
+      var r=c.getAttribute("data-reg");
+      if(state.regs.has(r)){state.regs.delete(r);c.classList.remove("on");}
+      else{state.regs.add(r);c.classList.add("on");}
+      render();
+    };
+  });
+  var tEl=document.getElementById("fTypes");
+  tEl.innerHTML='<span class="chip on" data-t="all">全部</span><span class="chip" data-t="new">新房</span><span class="chip" data-t="sec">住宅小区</span>';
+  Array.prototype.forEach.call(tEl.children,function(c){
+    c.onclick=function(){
+      state.types=c.getAttribute("data-t");
+      Array.prototype.forEach.call(tEl.children,function(x){x.classList.remove("on");});
+      c.classList.add("on"); render();
+    };
+  });
+  var sel=document.getElementById("fBlock");
+  var sorted=BLK.slice().sort(function(a,b){return b.cnt-a.cnt;});
+  var oh='<option value="">全部板块（57）</option>';
+  sorted.forEach(function(b){ oh+='<option value="'+BLK.indexOf(b)+'">'+b.n+' · '+b.r+'（'+b.cnt+'）</option>'; });
+  sel.innerHTML=oh;
+  sel.onchange=function(){ state.block=this.value; render(); };
+
+  var mEl=document.getElementById("fMetro"), mh="";
+  METRO_F.forEach(function(m,i){ mh+='<span class="chip'+(i===0?" on":"")+'" data-m="'+m[2]+'">'+m[1]+'</span>'; });
+  mEl.innerHTML=mh;
+  Array.prototype.forEach.call(mEl.children,function(c){
+    c.onclick=function(){
+      state.metro=+c.getAttribute("data-m");
+      Array.prototype.forEach.call(mEl.children,function(x){x.classList.remove("on");});
+      c.classList.add("on"); render();
+    };
+  });
+
+  var pEl=document.getElementById("fTiers"), ph="";
+  TIER_N.forEach(function(n,i){ ph+='<span class="chip" data-tier="'+i+'"><span class="dot" style="background:'+TIER_C[i]+'"></span>'+n+'</span>'; });
+  pEl.innerHTML=ph;
+  Array.prototype.forEach.call(pEl.children,function(c){
+    c.onclick=function(){
+      var t=+c.getAttribute("data-tier");
+      if(state.tiers.has(t)){state.tiers.delete(t);c.classList.remove("on");}
+      else{state.tiers.add(t);c.classList.add("on");}
+      render();
+    };
+  });
+}
+document.getElementById("list").addEventListener("click",function(e){
+  var card=e.target.closest?e.target.closest(".card"):null;
+  if(!card) return;
+  var id=+card.getAttribute("data-id");
+  openItem(ITEMS[id],true);
+});
+document.getElementById("fSort").onchange=function(){ state.sort=this.value; render(); };
+var kt=null;
+document.getElementById("fKw").oninput=function(){
+  var v=this.value; clearTimeout(kt);
+  kt=setTimeout(function(){ state.kw=v; render(); },180);
+};
+document.getElementById("fitBtn").onclick=function(){
+  if(!lastList.length){ toast("没有结果"); return; }
+  var b=L.latLngBounds(lastList.slice(0,600).map(function(i){return i.ll;}));
+  map.fitBounds(b,{padding:[50,50],maxZoom:15});
+};
+document.getElementById("resetBtn").onclick=function(){
+  state.regs.clear(); state.types="all"; state.block=""; state.metro=1e9; state.tiers.clear(); state.kw=""; state.sort="d";
+  Array.prototype.forEach.call(document.querySelectorAll(".chip.on"),function(c){c.classList.remove("on");});
+  document.getElementById("fTypes").children[0].classList.add("on");
+  document.getElementById("fMetro").children[0].classList.add("on");
+  document.getElementById("fBlock").value="";
+  document.getElementById("fKw").value="";
+  document.getElementById("fSort").value="d";
+  closeDrawer(); render();
+};
+document.getElementById("colorSeg").addEventListener("click",function(e){
+  if(e.target.tagName!=="BUTTON") return;
+  state.cm=e.target.getAttribute("data-cm");
+  Array.prototype.forEach.call(this.children,function(x){x.classList.remove("on");});
+  e.target.classList.add("on"); render();
+});
+document.getElementById("baseSeg").addEventListener("click",function(e){
+  if(e.target.tagName!=="BUTTON") return;
+  var n=e.target.getAttribute("data-base");
+  [baseAmap,baseCarto].forEach(function(l){ if(map.hasLayer(l)) map.removeLayer(l); });
+  useGCJ=(n==="amap");
+  (n==="amap"?baseAmap:baseCarto).addTo(map);
+  Array.prototype.forEach.call(this.children,function(x){x.classList.remove("on");});
+  e.target.classList.add("on"); rebuildLL(); layer.draw();
+});
+document.getElementById("fitCity").onclick=function(){
+  map.fitBounds([[31.25,119.72],[31.98,120.55]],{padding:[16,16]});
+};
+document.getElementById("menuBtn").onclick=function(){ document.getElementById("side").classList.toggle("open"); };
+
+/* ---------- 抽屉 ---------- */
+var drawer=document.getElementById("drawer");
+function closeDrawer(){
+  drawer.classList.remove("open"); drawer.innerHTML=""; state.sel=null;
+  Array.prototype.forEach.call(document.querySelectorAll(".card.sel"),function(c){c.classList.remove("sel");});
+}
+function dcell(k,v,unit,cls){
+  return '<div class="dcell"><div class="k">'+k+'</div><div class="v '+(cls||"")+'">'+v+(unit?'<i>'+unit+'</i>':'')+'</div></div>';
+}
+function openItem(it,focus){
+  state.sel=it.id;
+  var b=it.bk, d=it.d||{};
+  var price=priceOf(it);
+  function mcls(v){ return v==null?"no":(v<=500?"ok":(v<=1200?"mid":"no")); }
+  function mval(v){ return v==null?'<span style="font-size:11px;color:#64748b">无数据</span>':v; }
+  var fac=b.fac||{};
+  var html=''
+   +'<button class="dw-close">✕</button>'
+   +'<div class="dw-head"><div class="dw-badges"><span class="b '+it.t+'">'+TYPE_L[it.t]+'</span>'
+   +'<span class="b reg">'+it.r+'</span><span class="b acc">'+b.n+'</span>'
+   +(b.gen?'<span class="b reg">乡镇/外围</span>':'')+'</div>'
+   +'<h2>'+it.n+'</h2><div class="dw-sub">'+b.n+' · '+(it.a||b.r)+'</div></div>'
+   +'<div class="dw-price" style="padding:10px 14px;border-bottom:1px solid #1a2740;display:flex;align-items:flex-end;gap:8px">'
+   +'<div style="font-size:25px;font-weight:800;color:#ffd48a;line-height:1;letter-spacing:-.5px">'+(price?(price/10000).toFixed(2):"—")+'</div>'
+   +'<div style="font-size:10px;color:#8f7538;padding-bottom:2px">万元/㎡（板块参考）</div>'
+   +'<div style="margin-left:auto;font-size:9px;color:#7f97b6;text-align:right">'+(it.t==="new"?"新房 · 售楼处点位":"二手住宅小区")+'</div></div>'
+   +'<div class="sec-t">到最近配套（直线距离 · 高德实测）</div>'
+   +'<div class="dgrid">'
+   +dcell("🚇 最近地铁站",mval(d.metro),"m",mcls(d.metro))
+   +dcell("🏫 最近学校",mval(d.school),"m",mcls(d.school))
+   +dcell("🏥 最近医院",mval(d.hospital),"m",mcls(d.hospital))
+   +'<div class="dcell"><div class="k">🛒 最近商场</div><div class="v">'+mval(d.mall)+'<i>m</i></div></div>'
+   +'<div class="dcell"><div class="k">🌳 最近公园</div><div class="v">'+mval(d.park)+'<i>m</i></div></div>'
+   +'<div class="dcell"><div class="k">🚶 步行到地铁</div><div class="v">'+(d.metro!=null?Math.max(1,Math.round(d.metro/75)):"—")+'<i>分钟</i></div></div>'
+   +'</div>'
+   +'<div class="sec-t">板块价格关系</div>'
+   +'<div class="pricemap">新房参考 <b>'+(b.np/10000).toFixed(2)+'万</b> ／ 二手参考 <b>'+(b.sp/10000).toFixed(2)+'万</b><br/>'
+   +'价差 <b class="gap">'+(b.np-b.sp)+' 元/㎡</b>　板块内共 <b>'+b.cnt+'</b> 个点位</div>'
+   +'<div class="sec-t">板块配套</div><div class="fac">'
+   +'<div><i>🚇</i><span>'+fac.m+'</span></div><div><i>🏫</i><span>'+fac.s+'</span></div>'
+   +'<div><i>🛒</i><span>'+fac.c+'</span></div><div><i>🏥</i><span>'+fac.h+'</span></div>'
+   +'<div><i>🌳</i><span>'+fac.p+'</span></div></div>'
+   +'<div class="sec-t">优点</div><div class="pc pro"><ul>'+b.pro.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul></div>'
+   +'<div class="sec-t">缺点 / 风险</div><div class="pc con"><ul>'+b.con.map(function(x){return "<li>"+x+"</li>";}).join("")+'</ul></div>'
+   +'<div class="dw-foot">坐标为高德 POI 实测点（售楼处为在售项目案场位置，可能与实际楼栋有偏差）；价格为所属板块参考均价，非该楼盘实际报价，不构成购房建议。<br/>数据：高德开放平台 · 2026年11月</div>';
+  drawer.innerHTML=html;
+  drawer.classList.add("open");
+  drawer.scrollTop=0;
+  drawer.querySelector(".dw-close").onclick=closeDrawer;
+  Array.prototype.forEach.call(document.querySelectorAll(".card"),function(c){
+    c.classList.toggle("sel",c.getAttribute("data-id")===String(it.id));
+  });
+  if(focus) map.setView(it.ll,Math.max(map.getZoom(),16));
+}
+
+document.getElementById("map").addEventListener("mouseleave",function(){
+  document.getElementById("tip").style.display="none";
+});
+document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeDrawer(); });
+window.addEventListener("resize",function(){ map.invalidateSize(); layer.draw(); });
+
+function toast(msg){
+  var d=document.createElement("div");
+  d.style.cssText="position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:1500;background:rgba(9,15,26,.96);border:1px solid #3b5f8f;color:#dbe9fb;padding:7px 12px;border-radius:7px;font-size:11px";
+  d.textContent=msg;
+  document.getElementById("mapwrap").appendChild(d);
+  setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); },3000);
+}
+
+buildUI();
+render();
+setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
+};
+
+
+
+
+
+<script>
+(function(){
+  var ov=document.getElementById('bootov');
+  function hide(){ if(ov) ov.style.display='none'; }
+  function done(){ hide(); try{ window.__BOOT(); }catch(e){ console.error(e); } }
+  function fallback(){
+    var s=document.createElement('script');
+    s.src='data.js';
+    s.onload=done;
+    s.onerror=function(){ if(ov) ov.querySelector('.bt').textContent='数据加载失败：app 目录下缺少 data.js / data.bin'; };
+    document.body.appendChild(s);
+  }
+  function tip(t){ if(ov){ var e=ov.querySelector('.bs'); if(e) e.textContent=t; } }
+  if(window.__WX2__){ done(); return; }
+  if(location.protocol==='file:' || !window.fetch || !window.DecompressionStream){ fallback(); return; }
+  var N=5, parts=[], ok=0;
+  function one(i){
+    return fetch('data.p'+i,{cache:'force-cache'}).then(function(r){
+      if(!r.ok) throw new Error('p'+i);
+      return r.arrayBuffer();
+    }).then(function(b){
+      parts[i]=new Uint8Array(b);
+      ok++;
+      tip('已加载 '+ok+'/'+N+' 片（'+(ok*100/N|0)+'%）');
+    });
+  }
+  var jobs=[]; for(var i=0;i<N;i++) jobs.push(one(i));
+  Promise.all(jobs).then(function(){
+    var total=0; for(var i=0;i<N;i++) total+=parts[i].length;
+    var all=new Uint8Array(total), off=0;
+    for(var i=0;i<N;i++){ all.set(parts[i],off); off+=parts[i].length; }
+    var ds=new DecompressionStream('gzip');
+    var stream=new Blob([all]).stream().pipeThrough(ds);
+    return new Response(stream).text();
+  }).then(function(t){ (new Function(t))(); done(); })
+    .catch(function(){ tip('分片加载失败，改用整包…'); fallback(); });
+})();
+</script>
+</body>
+</html>
