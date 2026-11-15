@@ -757,6 +757,8 @@ select{cursor:pointer}
 .mapbtn{background:rgba(10,17,29,.92);border:1px solid #2a3d5c;color:#a8bdd9;border-radius:7px;
   font-size:10px;padding:5px 8px;cursor:pointer;backdrop-filter:blur(8px)}
 .mapbtn:hover{color:#fff}
+.mapbtn.hi{border-color:#22c55e;color:#bbf7d0;background:rgba(34,197,94,.14);font-weight:600}
+.mapbtn.hi.on,.mapbtn.hi:hover{background:#16a34a;color:#fff;border-color:#4ade80}
 .legend{position:absolute;left:9px;bottom:56px;z-index:900;background:rgba(10,17,29,.92);
   border:1px solid #2a3d5c;border-radius:8px;padding:7px 9px;font-size:9.5px;color:#b9cce4;line-height:1.65;max-width:200px}
 .legend .lt{color:#7f97b6;margin-bottom:3px;letter-spacing:.4px}
@@ -927,16 +929,16 @@ select{cursor:pointer}
 <div id="bootov"><div class="spin"></div><div class="bt">正在加载楼盘数据…</div><div class="bs">0%</div></div>
     <div id="menuBtn">☰</div>
     <div class="mapbar">
+      <button class="mapbtn hi" id="cBtn">🚇 通勤圈</button>
+      <button class="mapbtn" id="locBtn">📍 位置</button>
+      <a class="mapbtn" href="calc.html" style="text-decoration:none">算一算</a>
       <div class="seg" id="colorSeg">
-        <button data-cm="type" class="on">按类型</button><button data-cm="price">按价格</button>
+        <button data-cm="type" class="on">类型</button><button data-cm="price">价格</button>
       </div>
       <div class="seg" id="baseSeg">
-        <button data-base="amap" class="on">高德底图</button><button data-base="carto">浅色</button>
+        <button data-base="amap" class="on">高德</button><button data-base="carto">浅色</button>
       </div>
-      <button class="mapbtn" id="fitCity">全市视野</button>
-      <button class="mapbtn" id="locBtn">📍 我的位置</button>
-      <button class="mapbtn" id="cBtn">通勤圈</button>
-      <a class="mapbtn" href="calc.html" style="text-decoration:none;display:inline-block">算一算</a>
+      <button class="mapbtn" id="fitCity">全域</button>
     </div>
     <div class="legend" id="legend"></div>
     <div class="cpanel" id="cpanel">
@@ -966,7 +968,7 @@ select{cursor:pointer}
   </main>
 </div>
 <div id="loaderr">地图组件加载失败：请检查网络（需能访问 unpkg.com）。</div>
-<script src="leaflet.js?v=20261115e"></script>
+<script src="leaflet.js?v=20261115f"></script>
 <script>
 (function(){
 "use strict";
@@ -1615,7 +1617,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
   function fallback(){
     txt('整包');
     var s=document.createElement('script');
-    s.src='data.js?v=20261115e';
+    s.src='data.js?v=20261115f';
     s.onload=done;
     s.onerror=function(){ txt('失败'); if(ov) ov.querySelector('.bt').textContent='数据加载失败，请刷新重试'; };
     document.body.appendChild(s);
@@ -1624,7 +1626,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
   if(location.protocol==='file:' || !window.fetch || !window.DecompressionStream){ fallback(); return; }
   var N=6, parts=[], ok=0;
   function one(i){
-    return fetch('data.p'+i+'?v=20261115e').then(function(r){
+    return fetch('data.p'+i+'?v=20261115f').then(function(r){
       if(!r.ok) throw new Error('p'+i);
       return r.arrayBuffer();
     }).then(function(b){
@@ -1641,7 +1643,7 @@ setTimeout(function(){ map.invalidateSize(); layer.draw(); },240);
     return new Response(new Blob([all]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
   }).then(function(t){ (new Function(t))(); done(); })
     .catch(function(){ fallback(); });
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(function(){}); }
 })();
 </script>
 </body>
